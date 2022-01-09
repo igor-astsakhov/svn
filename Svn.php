@@ -71,6 +71,47 @@ class Svn
     }
 
     /**
+     * Removed rpms from the svn dirs
+     *
+     * @param bool $boolDryRun - dry run without rm
+     * @return void
+     * @author igor.astakhov <astahov@gmail.com>
+     */
+    public function rmrpm( bool $boolDryRun = false )
+    {
+        foreach ( $this->_di as $objFile ) {
+            if ( $objFile->isDot() || ! $this->_di->isDir()) {
+                continue;
+            }
+
+            $strDir = $this->_dir . '/' . $objFile->getFilename() . '/pkg/*.rpm';
+            $objPkg = new \GlobIterator( $strDir );
+            if ( ! $objPkg->count() ) {
+                $this->_error->offsetSet(
+                    $this->_di->key(),
+                    $strDir . ' = 0'
+                );
+                continue;
+            }
+
+            $strLine = $objFile->getFilename() . ' (' . $objPkg->count() . '):' . PHP_EOL;
+            foreach ( $objPkg as $objPkgFile ) {
+                $strLine .= "\t" . $objPkgFile->getFilename() . ' [-]' . PHP_EOL;
+
+                if ( ! $boolDryRun ) {
+                    $strLine .= "\tRemoved: " . $objPkgFile->getRealPath() . ' [x]' . PHP_EOL;
+                    unlink( $objPkgFile->getRealPath() );
+                }
+            }
+            $this->_todo->offsetSet(
+                $this->_di->key(),
+                $strLine
+            );
+        }
+        $this->_out();
+    }
+
+    /**
      * send the output of the app
      */
     protected function _out()
@@ -87,41 +128,5 @@ class Svn
                 echo implode( PHP_EOL, $arrLines ) . PHP_EOL ;
             }
         }
-    }
-
-    /**
-     * Removed rpms from the svn dirs
-     *
-     * @param bool $boolDryRun - dry run without rm
-     * @return void
-     * @author igor.astakhov <astahov@gmail.com>
-     */
-    public function rmrpm( bool $boolDryRun = false )
-    {
-        foreach ( $this->_di as $objFile ) {
-            if ( $objFile->isDot() || ! $this->_di->isDir()) {
-                continue;
-            }
-            $strDir = $this->_dir . '/' . $objFile->getFilename() . '/pkg/*.rpm';
-            $objPkg = new \GlobIterator( $strDir );
-            if ( ! $objPkg->count() ) {
-                continue;
-            }
-
-            $strLine = $objFile->getFilename() . ' (' . $objPkg->count() . '):' . PHP_EOL;
-            foreach ( $objPkg as $objPkgFile ) {
-                $strLine .= "\t" . $objPkgFile->getFilename() . ' [-]' . PHP_EOL;
-
-                if ( ! $boolDryRun ) {
-                    unlink( $objPkgFile->getRealPath() );
-                    // $strLine .= "\tRemoved: " . $objPkgFile->getRealPath() . ' [x]' . PHP_EOL;
-                }
-            }
-            $this->_todo->offsetSet(
-                $this->_di->key(),
-                $strLine
-            );
-        }
-        $this->_out();
     }
 }
