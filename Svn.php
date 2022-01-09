@@ -45,7 +45,8 @@ class Svn
             $strCmd = 'svn st ' . $this->_dir . '/' . $this->_di->getFilename() . ' 2>&1';
 
             exec( $strCmd, $arrLines );
-            if ( ! count( $arrLines ) ) {
+            $intTotal = count( $arrLines );
+            if ( ! $intTotal ) {
                 continue;
             }
 
@@ -57,13 +58,11 @@ class Svn
                 continue;
             }
 
-            // echo $strCmd . PHP_EOL;
-            // echo $objFile->getFilename() . ' - ' . count( $arrLines ) . PHP_EOL;
             $this->_todo->offsetSet(
                 $this->_di->key(),
                 // if verbose to draw the files
                 $objFile->getFilename() . ' - '
-                . ( $boolVerbose ? PHP_EOL . implode( "\t\n", $arrLines ) : count( $arrLines ) )
+                . ( $boolVerbose ? PHP_EOL . implode( "\t\n", $arrLines ) : $intTotal )
             );
             $arrLines = [];
         }
@@ -99,7 +98,7 @@ class Svn
                 $strLine .= "\t" . $objPkgFile->getFilename() . ' [-]' . PHP_EOL;
 
                 if ( ! $boolDryRun ) {
-                    $strLine .= "\tRemoved: " . $objPkgFile->getRealPath() . ' [x]' . PHP_EOL;
+                    // $strLine .= "\tRemoved: " . $objPkgFile->getRealPath() . ' [x]' . PHP_EOL;
                     unlink( $objPkgFile->getRealPath() );
                 }
             }
