@@ -1,0 +1,26 @@
+{
+    "name": "iaskakho/svn",
+    "description": "SVN Api",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Igor Astakhov",
+            "email": "astahov@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.3.0"
+    },
+    "require-dev": {
+    },
+    "autoload": {
+        "psr-4": {
+            "iaskakho\\svn\\": "./"
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "optimize-autoloader": true
+    }
+}
