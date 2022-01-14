@@ -15,12 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "iaskakho\\svn\\": "./"
+            "iaskakho\\svn\\": "./src"
         }
-    },
-    "config": {
-        "preferred-install": "dist",
-        "sort-packages": true,
-        "optimize-autoloader": true
     }
 }
