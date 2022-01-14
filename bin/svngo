@@ -1,0 +1,36 @@
+#!/usr/bin/php
+<?php
+
+use iaskakho\svn\Svn;
+
+// may have to fix depending where you are and namespace configuration
+$strFile = '/vendor/autoload.php';
+$strAutoloadFile = dirname( dirname( __FILE__ ) ) . $strFile;
+if ( file_exists( $strAutoloadFile ) ) {
+    require_once $strAutoloadFile;
+} else {
+    $strHome = $_ENV['HOME'] ?? '.';
+    require_once $strHome . $strFile ;
+}
+
+/** @var $strDir - directory of the svn repositories */
+$strDir = '/home/mirror';
+
+/** @var $objSvn \iaskakho\svn\Svn */
+$objSvn = new Svn( $strDir );
+
+if ( isset( $argv[1] ) ) {
+    $strMethod = $argv[1];
+    if ( method_exists( $objSvn, $strMethod )  ) {
+        printf( 'RUNNING "%s"...' . PHP_EOL . PHP_EOL, $strMethod );
+        $boolVerbose = isset( $argv[2] ) && $argv[2] == 'true';
+        $objSvn->$strMethod( $boolVerbose );
+    } else {
+        printf( 'Method "%s" doesn\'t exist!' . PHP_EOL, $strMethod );
+    }
+} else {
+    printf( 'Argument [1], should be method of Svn class, [2] can be verbose.' . PHP_EOL );
+}
+// $objSvn->status( true );
+// $objSvn->rmrpm();
+
