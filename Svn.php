@@ -2,13 +2,22 @@
 
 namespace iaskakho\svn;
 
+/**
+ * Svn command wrapper to execute commands on multiple packages
+ * at the same time.
+ */
 class Svn
 {
     protected \DirectoryIterator $_di;
     protected \ArrayIterator $_error;
     protected \ArrayIterator $_todo;
+
+    /** @var string $_dir - parent dir */
     protected string $_dir;
-    // public array $arrLines = [];
+
+    /** @var string $_cwd - directory to work with */
+    protected string $_cwd;
+
     protected array $_keys = [ 'todo', 'error' ];
 
     /**
@@ -28,6 +37,94 @@ class Svn
         $this->_todo = new \ArrayIterator();
     } // END public class __construct( $strDir )
 
+    protected function _runCmd( string $strCmd, bool $boolPrint = true ) : array
+    {
+        chdir( $this->_cwd );
+        exec( $strCmd . ' 2>&1', $arrResponse );
+        if ( $boolPrint ) {
+            foreach ( $arrResponse as $strLine ) {
+                echo $strLine . PHP_EOL;
+            }
+
+            if ( count( $arrResponse ) ) {
+                echo PHP_EOL;
+            }
+        }
+        return array_filter( $arrResponse );
+    }
+
+    /**
+     * Adds files to the repo
+     *
+     * @return void
+     * @author igor-astsakhov <astahov@gmail.com>
+     */
+    protected function _add( array $arrFiles )
+    {
+        foreach ( $arrFiles as $strLine ) {
+            list( $strFlag, $strFile ) = preg_split( '/\s+/', $strLine );
+
+            if ( $strFlag === '?' ) {
+                $this->_runCmd( 'svn add ' . $strFile );
+            }
+        }
+    }
+    /**
+     * commits the package or packages
+     *
+     * @return void
+     * @author igor-astsakhov <astahov@gmail.com>
+     */
+    public function commit( string $strPackage = 'all' )
+    {
+        $this->status( false, false );
+        foreach ( $this->_todo as $intKey => $strMessage ) {
+            list( $strFile, $intFiles ) = explode( ' - ', $strMessage );
+            $this->_cwd = $this->_di->getPath() . '/' . $strFile;
+
+            do {
+                echo '>> Commit: ' . $this->_cwd . ' FILES: ' . $intFiles . PHP_EOL;
+                $arrFiles = $this->_runCmd( 'svn st' );
+
+                $strResponse = substr( strtolower( trim( readline( 'Confirm Y/N/Q OR a(add)/u(up)? ' ) ) ), 0, 1 );
+
+                switch ( $strResponse ) {
+                    case 'y':
+                        echo 'Committing: ' . $strFile . PHP_EOL;
+                        $this->_runCmd( 'svn ci -m "byticket"' );
+                        break;
+
+                    case 'a':
+                        echo 'Adding: ' . $strFile . PHP_EOL;
+                        $this->_add( $arrFiles );
+                        break;
+
+                    case 'u':
+                        echo 'Updating: ' . $strFile . PHP_EOL;
+                        $this->_update();
+                        break;
+
+                    case 'n':
+                        $arrFiles = [];
+                        break;
+
+                    default:
+                        exit;
+                }
+            } while ( count( $arrFiles ) );
+        }
+    }
+
+    /**
+     * Updates the package or packages
+     *
+     * @return void
+     * @author igor-astsakhov <astahov@gmail.com>
+     */
+    protected function _update()
+    {
+        $this->_runCmd( 'svn up' );
+    }
     /**
      * Checks the SVN repo status and returns the output, so you dont have to go
      * into each one and do it in future we can do add actions and others
@@ -35,16 +132,15 @@ class Svn
      * @param bool $boolVerbose - should the output be verbose or short
      * @return void
      */
-    public function status( bool $boolVerbose = false ) : void
+    public function status( bool $boolVerbose = false , bool $boolOut = true ) : void
     {
         foreach ( $this->_di as $objFile ) {
-            if ( $objFile->isDot() || ! $this->_di->isDir()) {
+            if ( $objFile->isDot() || ! $objFile->isDir() ) {
                 continue;
             }
 
-            $strCmd = 'svn st ' . $this->_dir . '/' . $this->_di->getFilename() . ' 2>&1';
-
-            exec( $strCmd, $arrLines );
+            $this->_cwd = $this->_di->getPath() . '/' . $this->_di->getFilename();
+            $arrLines = $this->_runCmd( 'svn st', false );
             $intTotal = count( $arrLines );
             if ( ! $intTotal ) {
                 continue;
@@ -66,7 +162,10 @@ class Svn
             );
             $arrLines = [];
         }
-        $this->_out();
+
+        if ( $boolOut ) {
+            $this->_out();
+        }
     }
 
     /**
@@ -107,7 +206,9 @@ class Svn
                 $strLine
             );
         }
+
         $this->_out();
+        // }
     }
 
     /**
